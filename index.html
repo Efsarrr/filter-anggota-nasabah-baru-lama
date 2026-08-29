@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Input Nasabah - Bahan Analisis Bulanan</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background: #f4f5f7;
+    margin: 0;
+    padding: 0;
+    color: #1f2430;
+  }
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 220px;
+    background: #10275c;
+    color: #dbe4ff;
+    padding: 20px 16px;
+    flex-shrink: 0;
+  }
+  .sidebar .brand-tag {
+    display: inline-block;
+    background: #2451c9;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+  }
+  .sidebar h1 { font-size: 15px; margin: 0 0 2px; color: #fff; }
+  .sidebar .sub { font-size: 11px; color: #9fb0dd; margin: 0 0 16px; }
+  .sidebar .date { font-size: 12px; color: #c8d3f5; border-bottom: 1px solid #2a3f7a; padding-bottom: 12px; margin-bottom: 16px; }
+  .sidebar label.inline {
+    display: block; font-size: 10px; text-transform: uppercase; color: #7f92c9;
+    margin-bottom: 4px; letter-spacing: .04em;
+  }
+  .sidebar input.branchcode {
+    width: 100%;
+    background: #1b3572;
+    border: 1px solid #2a4485;
+    color: #fff;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .sidebar button.danger {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #5a3232;
+    color: #f2a4a4;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .sidebar .secondary {
+    background: #1b3572;
+    border: 1px solid #2a4485;
+    color: #dbe4ff;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 12px;
+  }
+  .main { flex: 1; padding: 24px 28px; }
+  .main h2 { font-size: 18px; margin: 0 0 18px; }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: #fff;
+    border-top: 3px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .stat-card.blue { border-top-color: #2451c9; }
+  .stat-card.green { border-top-color: #0a8f5b; }
+  .stat-card.amber { border-top-color: #c77a1f; }
+  .stat-card .lbl { font-size: 11px; font-weight: 700; color: #667085; letter-spacing: .03em; }
+  .stat-card .num { font-size: 26px; font-weight: 700; margin: 4px 0 2px; }
+  .stat-card .cap { font-size: 11px; color: #98a2b3; }
+  .card {
+    background: #fff;
+    border: 1px solid #e4e7ec;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h3 { font-size: 14px; margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
+  .card ol { font-size: 12.5px; color: #475467; margin: 0 0 12px; padding-left: 18px; }
+  .card ol b { color: #1f2430; }
+  textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    resize: vertical;
+  }
+  .row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button.primary {
+    background: #2451c9;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.secondary {
+    background: #fff;
+    color: #1f2430;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .formgrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #344054;
+    margin-bottom: 5px;
+  }
+  .field input {
+    width: 100%;
+    border: 1px solid #d0d5dd;
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 6px; }
+  th, td { border: 1px solid #e4e7ec; padding: 6px 8px; text-align: left; }
+  th { background: #f4f5f7; font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge.baru { background: #d1fadf; color: #067647; }
+  .badge.lama { background: #e9eaeb; color: #414651; }
+  .badge.lain { background: #fef0c7; color: #b54708; }
+  .del-btn { background: none; border: none; color: #d92d20; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .empty { color: #98a2b3; font-size: 13px; padding: 20px 0; text-align: center; }
+  .status-msg { font-size: 12px; margin-top: 8px; }
+  .status-msg.ok { color: #0a8f5b; }
+  .status-msg.err { color: #d92d20; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <span class="brand-tag" id="branchLabel">CMS006</span>
+    <h1>Bahan Analisis Bulanan</h1>
+    <p class="sub">Pusat Gadai Indonesia</p>
+    <div class="date" id="todayDate"></div>
+    <label class="inline">Kode cabang aktif</label>
+    <input type="text" class="branchcode" id="targetBranch" value="1126" maxlength="4">
+    <button class="danger" onclick="resetAll()">Reset semua data</button>
+    <div style="margin-top:16px; padding-top:14px; border-top:1px solid #2a3f7a;">
+      <button class="secondary" style="width:100%; margin-bottom:8px;" onclick="backupData()">Backup Data</button>
+      <label class="secondary" style="width:100%; display:block; text-align:center; cursor:pointer; box-sizing:border-box;">
+        Restore Data
+        <input type="file" accept=".json" style="display:none;" onchange="restoreData(event)">
+      </label>
+    </div>
+  </div>
+
+  <div class="main">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px;">
+      <h2 style="margin:0;">Input Nasabah</h2>
+      <div>
+        <label style="font-size:11px; font-weight:700; color:#344054; margin-right:6px;">Tampilkan bulan</label>
+        <select id="monthFilter" style="border:1px solid #d0d5dd; border-radius:7px; padding:7px 10px; font-size:13px;" onchange="render()"></select>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="lbl">TOTAL NASABAH</div>
+        <div class="num" id="statTotal">0</div>
+        <div class="cap">terdaftar</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="lbl">GADAI AKTIF</div>
+        <div class="num" id="statAktif">0</div>
+        <div class="cap">sedang berjalan</div>
+      </div>
+      <div class="stat-card green">
+        <div class="lbl">NASABAH BARU</div>
+        <div class="num" id="statBaru">0</div>
+        <div class="cap" id="statBaruCap">bulan ini</div>
+      </div>
+      <div class="stat-card amber">
+        <div class="lbl">NASABAH LAMA</div>
+        <div class="num" id="statLama">0</div>
+        <div class="cap" id="statLamaCap">bulan ini</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Import dari Detail Gadai</h3>
+      <ol>
+        <li>Buka <b>Detail Gadai</b> di sistem PGI</li>
+        <li>Tekan <b>Ctrl+A</b> lalu <b>Ctrl+C</b></li>
+        <li>Paste di bawah, lalu klik <b>Baca Data</b></li>
+      </ol>
+      <textarea id="rawInput" placeholder="Paste teks dari halaman Detail Gadai di sini..."></textarea>
+      <div class="row">
+        <button class="primary" onclick="bacaData()">Baca Data</button>
+        <button class="secondary" onclick="document.getElementById('rawInput').value=''">Bersihkan</button>
+      </div>
+      <div id="parseMsg" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <h3>Input Manual</h3>
+      <div class="formgrid">
+        <div class="field"><label>Nama Nasabah *</label><input type="text" id="fNama" placeholder="Nama lengkap"></div>
+        <div class="field"><label>No. WhatsApp</label><input type="text" id="fWa" placeholder="08xxx"></div>
+        <div class="field"><label>Tanggal Gadai *</label><input type="date" id="fTanggal"></div>
+        <div class="field"><label>No. Faktur</label><input type="text" id="fFaktur" placeholder="Dari Detail Gadai"></div>
+        <div class="field"><label>No. Anggota *</label><input type="text" id="fAnggota" placeholder="112626060006"></div>
+        <div class="field"><label>No. Identitas (KTP)</label><input type="text" id="fKtp" placeholder="NIK"></div>
+        <div class="field" style="grid-column: 1 / -1;"><label>Alamat</label><input type="text" id="fAlamat" placeholder="Alamat nasabah"></div>
+      </div>
+      <div class="row">
+        <button class="primary" onclick="simpanNasabah()">Simpan Nasabah</button>
+      </div>
+      <div id="saveMsg" class="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <h3>Daftar Nasabah</h3>
+      <div class="row" style="margin-top:0;margin-bottom:12px;">
+        <button class="secondary" onclick="exportExcel()">Download Excel</button>
+        <label class="secondary" style="cursor:pointer; display:inline-flex; align-items:center;">
+          Import dari Excel
+          <input type="file" accept=".xlsx,.xls" style="display:none;" onchange="importExcel(event)">
+        </label>
+      </div>
+      <div id="tableWrap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'nasabah-records';
+let records = [];
+
+const monthMap = {
+  'januari':1,'februari':2,'maret':3,'april':4,'mei':5,'juni':6,
+  'juli':7,'agustus':8,'september':9,'oktober':10,'november':11,'desember':12
+};
+
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+async function loadRecords() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    records = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    records = [];
+  }
+  render();
+}
+
+async function saveRecords() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch (e) {
+    console.error('Gagal menyimpan data', e);
+    alert('Gagal menyimpan data ke browser. Pastikan storage browser tidak penuh/di-disable.');
+  }
+}
+
+function normalizeTanggal(value) {
+  if (!value) return '';
+  if (value instanceof Date) {
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(value.getUTCDate()).padStart(2, '0');
+    return y + '-' + m + '-' + d;
+  }
+  const str = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    let a = parseInt(m[1], 10), b = parseInt(m[2], 10), y = m[3];
+    let day, month;
+    if (a > 12) { day = a; month = b; }
+    else if (b > 12) { day = b; month = a; }
+    else { day = a; month = b; }
+    return y + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+  }
+  return str;
+}
+
+function importExcel(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: true });
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      if (rows.length < 2) {
+        alert('File Excel kosong atau tidak ada data.');
+        event.target.value = '';
+        return;
+      }
+
+      const headers = rows[0].map(h => String(h).trim());
+      const idx = (label) => headers.findIndex(h => h.toLowerCase() === label.toLowerCase());
+
+      const iNama = idx('Nama');
+      const iAnggota = idx('No. Anggota');
+      const iWa = idx('No. WhatsApp');
+      const iFaktur = idx('No. Faktur');
+      const iKtp = idx('No. Identitas');
+      const iAlamat = idx('Alamat');
+      const iTanggal = idx('Tanggal Gadai');
+
+      if (iNama === -1 && iAnggota === -1) {
+        alert('Kolom tidak dikenali. Pastikan file Excel berasal dari fitur Download Excel aplikasi ini.');
+        event.target.value = '';
+        return;
+      }
+
+      const targetBranch = document.getElementById('targetBranch').value.trim();
+      const existingKeys = new Set(records.map(r => (r.anggota || '') + '|' + (r.tanggal || '') + '|' + (r.faktur || '')));
+
+      let imported = 0;
+      let skipped = 0;
+
+      for (let i = 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.every(c => c === '' || c === undefined)) continue;
+
+        const nama = iNama !== -1 ? String(row[iNama] || '').trim() : '';
+        const anggota = iAnggota !== -1 ? String(row[iAnggota] || '').trim() : '';
+        const wa = iWa !== -1 ? String(row[iWa] || '').trim() : '';
+        const faktur = iFaktur !== -1 ? String(row[iFaktur] || '').trim() : '';
+        const ktp = iKtp !== -1 ? String(row[iKtp] || '').trim() : '';
+        const alamat = iAlamat !== -1 ? String(row[iAlamat] || '').trim() : '';
+        const tanggal = iTanggal !== -1 ? normalizeTanggal(row[iTanggal]) : '';
+
+        if (!nama && !anggota) continue;
+
+        const key = anggota + '|' + tanggal + '|' + faktur;
+        if (existingKeys.has(key)) { skipped++; continue; }
+
+        const { status, keterangan } = classify(anggota, tanggal, targetBranch);
+        records.push({ id: Date.now() + i, nama, wa, tanggal, faktur, anggota, ktp, alamat, status, keterangan });
+        existingKeys.add(key);
+        imported++;
+      }
+
+      await saveRecords();
+      render();
+      alert('Import selesai. ' + imported + ' data ditambahkan, ' + skipped + ' data dilewati (sudah ada sebelumnya).');
+    } catch (err) {
+      console.error(err);
+      alert('Gagal membaca file Excel. Pastikan formatnya sesuai hasil Download Excel aplikasi ini.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function backupData() {
+  if (records.length === 0) {
+    alert('Belum ada data untuk di-backup.');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(records, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'backup_nasabah_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function restoreData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!Array.isArray(parsed)) throw new Error('Format tidak sesuai');
+      if (!confirm('Restore akan MENGGANTI seluruh data saat ini dengan isi file backup. Lanjutkan?')) return;
+      records = parsed;
+      await saveRecords();
+      render();
+      alert('Data berhasil di-restore.');
+    } catch (err) {
+      alert('Gagal membaca file backup. Pastikan file berasal dari fitur Backup Data.');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function parseTanggalToISO(str) {
+  const parts = str.trim().toLowerCase().split(/\s+/);
+  if (parts.length < 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = monthMap[parts[1]];
+  const year = parseInt(parts[2], 10);
+  if (!month || isNaN(year) || isNaN(day)) return null;
+  return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+}
+
+function findFieldValue(lines, label) {
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].toLowerCase() === label.toLowerCase()) {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].length > 0) return lines[j];
+      }
+    }
+  }
+  return null;
+}
+
+function bacaData() {
+  const raw = document.getElementById('rawInput').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const msg = document.getElementById('parseMsg');
+
+  if (lines.length === 0) {
+    msg.textContent = 'Tempel data dulu sebelum klik Baca Data.';
+    msg.className = 'status-msg err';
+    return;
+  }
+
+  const nama = findFieldValue(lines, 'Nama');
+  const wa = findFieldValue(lines, 'No. Handphone');
+  const noFaktur = findFieldValue(lines, 'No. Faktur');
+  const noAnggota = findFieldValue(lines, 'No. Anggota');
+  const noKtp = findFieldValue(lines, 'No. Identitas');
+  const alamat = findFieldValue(lines, 'Alamat');
+  const tglGadaiStr = findFieldValue(lines, 'Tanggal Gadai');
+
+  if (!noAnggota && !nama) {
+    msg.textContent = 'Data tidak dikenali. Pastikan teks berasal dari halaman Detail Gadai.';
+    msg.className = 'status-msg err';
+    return;
+  }
+
+  if (nama) document.getElementById('fNama').value = nama;
+  if (wa) document.getElementById('fWa').value = wa;
+  if (noFaktur) document.getElementById('fFaktur').value = noFaktur;
+  if (noAnggota) document.getElementById('fAnggota').value = noAnggota;
+  if (noKtp) document.getElementById('fKtp').value = noKtp;
+  if (alamat) document.getElementById('fAlamat').value = alamat;
+  if (tglGadaiStr) {
+    const iso = parseTanggalToISO(tglGadaiStr);
+    if (iso) document.getElementById('fTanggal').value = iso;
+  }
+
+  msg.textContent = 'Data berhasil dibaca. Cek dan lengkapi di form Input Manual, lalu klik Simpan Nasabah.';
+  msg.className = 'status-msg ok';
+}
+
+function classify(noAnggota, tanggalISO, targetBranch) {
+  if (!noAnggota || noAnggota.length < 8) {
+    return { status: 'Tidak diketahui', keterangan: 'No. Anggota tidak lengkap' };
+  }
+  const brCode = noAnggota.slice(0, 4);
+  const yy = noAnggota.slice(4, 6);
+  const mm = noAnggota.slice(6, 8);
+
+  if (brCode !== targetBranch) {
+    return { status: 'Lainnya', keterangan: 'Nasabah cabang lain (kode ' + brCode + ')' };
+  }
+  if (!tanggalISO) {
+    return { status: 'Tidak diketahui', keterangan: 'Tanggal gadai belum diisi' };
+  }
+  const [gy, gm] = tanggalISO.split('-');
+  const gadaiYY = gy.slice(2, 4);
+  const gadaiMM = gm;
+  if (yy === gadaiYY && mm === gadaiMM) {
+    return { status: 'Nasabah Baru', keterangan: 'Daftar dan gadai di bulan yang sama' };
+  }
+  return { status: 'Nasabah Lama', keterangan: 'Terdaftar bulan ' + mm + '/20' + yy };
+}
+
+async function simpanNasabah() {
+  const nama = document.getElementById('fNama').value.trim();
+  const wa = document.getElementById('fWa').value.trim();
+  const tanggal = document.getElementById('fTanggal').value;
+  const faktur = document.getElementById('fFaktur').value.trim();
+  const anggota = document.getElementById('fAnggota').value.trim();
+  const ktp = document.getElementById('fKtp').value.trim();
+  const alamat = document.getElementById('fAlamat').value.trim();
+  const saveMsg = document.getElementById('saveMsg');
+
+  if (!nama || !anggota || !tanggal) {
+    saveMsg.textContent = 'Nama, No. Anggota, dan Tanggal Gadai wajib diisi.';
+    saveMsg.className = 'status-msg err';
+    return;
+  }
+
+  const targetBranch = document.getElementById('targetBranch').value.trim();
+  const { status, keterangan } = classify(anggota, tanggal, targetBranch);
+
+  records.push({
+    id: Date.now(),
+    nama, wa, tanggal, faktur, anggota, ktp, alamat, status, keterangan
+  });
+
+  await saveRecords();
+  render();
+
+  document.getElementById('fNama').value = '';
+  document.getElementById('fWa').value = '';
+  document.getElementById('fTanggal').value = '';
+  document.getElementById('fFaktur').value = '';
+  document.getElementById('fAnggota').value = '';
+  document.getElementById('fKtp').value = '';
+  document.getElementById('fAlamat').value = '';
+  document.getElementById('rawInput').value = '';
+  document.getElementById('parseMsg').textContent = '';
+
+  saveMsg.textContent = 'Nasabah tersimpan.';
+  saveMsg.className = 'status-msg ok';
+}
+
+async function hapusRecord(id) {
+  records = records.filter(r => r.id !== id);
+  await saveRecords();
+  render();
+}
+
+async function resetAll() {
+  if (!confirm('Hapus semua data nasabah yang tersimpan? Tindakan ini tidak bisa dibatalkan.')) return;
+  records = [];
+  await saveRecords();
+  render();
+}
+
+const monthNamesID = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+function monthLabel(ym) {
+  const [y, m] = ym.split('-');
+  return monthNamesID[parseInt(m, 10) - 1] + ' ' + y;
+}
+
+function buildMonthOptions() {
+  const select = document.getElementById('monthFilter');
+  const prevValue = select.value;
+  const now = new Date();
+  const curYM = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+
+  const set = new Set(records.filter(r => r.tanggal).map(r => r.tanggal.slice(0, 7)));
+  set.add(curYM);
+  const months = Array.from(set).sort().reverse();
+
+  let html = '<option value="ALL">Semua bulan</option>';
+  months.forEach(ym => {
+    html += '<option value="' + ym + '">' + monthLabel(ym) + '</option>';
+  });
+  select.innerHTML = html;
+
+  if (prevValue && (prevValue === 'ALL' || months.includes(prevValue))) {
+    select.value = prevValue;
+  } else {
+    select.value = curYM;
+  }
+}
+
+function render() {
+  buildMonthOptions();
+  const selectedMonth = document.getElementById('monthFilter').value;
+
+  const total = records.length;
+  const aktif = records.length;
+
+  const scoped = selectedMonth === 'ALL' ? records : records.filter(r => r.tanggal && r.tanggal.slice(0, 7) === selectedMonth);
+  const baruCount = scoped.filter(r => r.status === 'Nasabah Baru').length;
+  const lamaCount = scoped.filter(r => r.status === 'Nasabah Lama').length;
+  const capText = selectedMonth === 'ALL' ? 'sepanjang waktu' : monthLabel(selectedMonth).toLowerCase();
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statAktif').textContent = aktif;
+  document.getElementById('statBaru').textContent = baruCount;
+  document.getElementById('statLama').textContent = lamaCount;
+  document.getElementById('statBaruCap').textContent = capText;
+  document.getElementById('statLamaCap').textContent = capText;
+
+  const wrap = document.getElementById('tableWrap');
+  const tableRecords = selectedMonth === 'ALL' ? records : records.filter(r => r.tanggal && r.tanggal.slice(0, 7) === selectedMonth);
+
+  if (tableRecords.length === 0) {
+    wrap.innerHTML = '<div class="empty">Belum ada data nasabah untuk bulan ini.</div>';
+    return;
+  }
+
+  let html = '<table><thead><tr><th>Nama</th><th>No. Anggota</th><th>No. WA</th><th>No. Faktur</th><th>Tanggal Gadai</th><th>Status</th><th>Aksi</th></tr></thead><tbody>';
+  tableRecords.slice().reverse().forEach(r => {
+    let badgeClass = 'lama';
+    if (r.status === 'Nasabah Baru') badgeClass = 'baru';
+    else if (r.status === 'Lainnya') badgeClass = 'lain';
+    html += '<tr>' +
+      '<td>' + (r.nama || '-') + '</td>' +
+      '<td>' + (r.anggota || '-') + '</td>' +
+      '<td>' + (r.wa || '-') + '</td>' +
+      '<td>' + (r.faktur || '-') + '</td>' +
+      '<td>' + (r.tanggal || '-') + '</td>' +
+      '<td><span class="badge ' + badgeClass + '">' + r.status + '</span></td>' +
+      '<td><button class="del-btn" onclick="hapusRecord(' + r.id + ')">Hapus</button></td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+function exportExcel() {
+  if (records.length === 0) {
+    alert('Belum ada data untuk diekspor.');
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  const data = [['Nama', 'No. Anggota', 'No. WhatsApp', 'No. Faktur', 'No. Identitas', 'Alamat', 'Tanggal Gadai', 'Status', 'Keterangan']];
+  records.forEach(r => {
+    data.push([r.nama, r.anggota, r.wa, r.faktur, r.ktp, r.alamat, r.tanggal, r.status, r.keterangan]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Daftar Nasabah');
+  XLSX.writeFile(wb, 'daftar_nasabah.xlsx');
+}
+
+document.getElementById('targetBranch').addEventListener('input', function() {
+  document.getElementById('branchLabel').textContent = 'Kode ' + this.value;
+});
+
+loadRecords();
+</script>
+</body>
+</html>
